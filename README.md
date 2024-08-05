@@ -1,4 +1,3 @@
-# Read Me
 About me (Juan F. Dueñas): I am a microbial ecologist interested on the responses of microbial communities and soil processes to biotic and abiotic factors.
 This repository contains ecological datasets.
 The data found in this repository was generated to illustrate an example, or is real data from an experiment that is now part of a publication. 
