@@ -454,5 +454,5 @@ write.table(ts3, paste(path,"/ts2.txt",sep=""))
 fig1 <- ggarrange(pwhc1, pwhc2, pwsa1, pwsa2, pph1, pph2, prat1, prat2,
           ncol = 2, nrow = 4)
 annotate_figure(fig1, bottom = text_grob("Number of conditioners in the mix"))
-ggsave(filename = "Fig.1_300dpi.png", width = 6, height = 9, dpi = 300, bg="white")
-ggsave(filename = "Fig.1_150dpi.png", width = 6, height = 9, dpi = 150, bg="white")
+ggsave(filename = "Fig.1_300dpi.png", width = 5.8, height = 8.3, dpi = 300, bg="white")
+ggsave(filename = "Fig.1_150dpi.png", width = 5.8, height = 8.3, dpi = 150, bg="white")
