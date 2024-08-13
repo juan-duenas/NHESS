@@ -47,7 +47,7 @@ print(m4)
 bstat <- function (data, i)
 {
   d <- data [i,]
-  fit <- update(m4, data=d) # replace model object here
+  fit <- update(m3, data=d) # replace model object here
   #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
   ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
   #store updated model mean predictions
@@ -117,7 +117,7 @@ pwhc1  <- ggplot() +
   geom_errorbar(CIs.m1, mapping=aes(x=Nfactors, y=media, ymin=cdown, ymax=cup, color=Nfactors), width=0.1, linewidth=1, alpha=0.9)+
   scale_color_manual(values=colorp) + 
   ggtitle("A")+
-  ylab(expression("Water holding capacity (% gg"^"-1"*")")) + xlab("")+
+  ylab(expression("WHC (% gg"^"-1"*")")) + xlab("")+
   ggdist::stat_halfeye(data=MAD1,
                        density = "bounded",
                        scale=0.65, # (un)comment when using density="histogram"
@@ -143,7 +143,7 @@ pwsa1  <- ggplot() +
           geom_errorbar(CIs.m2, mapping=aes(x=Nfactors, y=media, ymin=cdown, ymax=cup, color=Nfactors), width=0.1, linewidth=1, alpha=0.9)+
           scale_color_manual(values=colorp) + 
           ggtitle("C")+
-          ylab("Water stable aggregates (%)") + xlab("")+
+          ylab("WSA (%)") + xlab("")+
           ggdist::stat_halfeye(data=MAD1,
                        density = "bounded",
                        scale=0.65, # (un)comment when using density="histogram"
@@ -195,7 +195,7 @@ prat1  <- ggplot() +
   geom_errorbar(CIs.m4, mapping=aes(x=Nfactors, y=media, ymin=cdown, ymax=cup, color=Nfactors), width=0.1, linewidth=1, alpha=0.9)+
   scale_color_manual(values=colorp) + 
   ggtitle("G")+
-  ylab(expression("B:F ratio")) + xlab("Number of conditioners in mix")+
+  ylab(expression("B:F ratio")) + xlab("")+
   ggdist::stat_halfeye(data=MAD1,
                        density = "bounded",
                        scale=0.65, # (un)comment when using density="histogram"
@@ -249,7 +249,7 @@ summary(m4.1)
 bstat2 <- function (data, i)
 {
   d <- data [i,]
-  fit <- update(m4.1, data=d)
+  fit <- update(m3.1, data=d)
   #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
   ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
   #store updated model mean predictions
@@ -318,7 +318,8 @@ pwhc2  <- ggplot() +
   geom_errorbar(CIs.m1.1, mapping=aes(x=Nfactors, y=media, ymin=cdown, ymax=cup, color=Nfactors), width=0.1, linewidth=1, alpha=0.9)+
   scale_color_manual(values=colorp) + 
   ggtitle("B")+
-  ylab(expression("Water holding capacity (% gg"^"-1"*")")) + xlab("")+
+  xlab("") +
+  ylab("") +
   ggdist::stat_halfeye(data=MAD2,
                        density = "bounded",
                        scale=0.65, # uncomment when using density="histogram"
@@ -338,7 +339,7 @@ pwhc2  <- ggplot() +
   geom_hline(yintercept=CIs.m1.1[1,1], linetype="dashed")+
   guides(color="none", fill="none")+
   theme_bw()+
-  theme(axis.title.y = element_blank())
+  theme()
 pwhc2
 
 #WSA
@@ -348,6 +349,7 @@ pwsa2  <- ggplot() +
   scale_color_manual(values=colorp) + 
   ggtitle("D")+
   xlab("")+
+  ylab("")+
   ggdist::stat_halfeye(data=MAD2,
                        density = "bounded",
                        scale=0.65, # uncomment when using density="histogram"
@@ -367,7 +369,7 @@ pwsa2  <- ggplot() +
   scale_x_discrete(labels= labelsx_legend)+
   guides(color="none", fill="none")+
   theme_bw()+
-  theme(axis.title.y = element_blank())
+  theme()
 pwsa2
 
 #pH
@@ -376,7 +378,8 @@ pph2  <- ggplot() +
   geom_errorbar(CIs.m3.1, mapping=aes(x=Nfactors, y=media, ymin=cdown, ymax=cup, color=Nfactors), width=0.1, linewidth=1, alpha=0.9)+
   scale_color_manual(values=colorp) + 
   ggtitle("F")+
-  ylab(expression("")) + xlab("")+
+  xlab("")+
+  ylab("")+
   ggdist::stat_halfeye(data=MAD2,
                        density = "bounded",
                        scale=0.65, # uncomment when using density="histogram"
@@ -396,7 +399,7 @@ pph2  <- ggplot() +
   scale_x_discrete(labels= labelsx_legend)+
   guides(color="none", fill="none")+
   theme_bw()+
-  theme(axis.title.y = element_blank())
+  theme()
 pph2
 
 #B:F ratio
@@ -405,10 +408,11 @@ prat2  <- ggplot() +
   geom_errorbar(CIs.m4.1, mapping=aes(x=Nfactors, y=media, ymin=cdown, ymax=cup, color=Nfactors), width=0.1, linewidth=1, alpha=0.9)+
   scale_color_manual(values=colorp) + 
   ggtitle("H")+
-  ylab(expression("B:F ratio")) + xlab("Number of conditioners in mix")+
+  ylab("")+
+  xlab("")+
   ggdist::stat_halfeye(data=MAD2,
                        density = "bounded",
-                       scale=0.65, # uncomment when using density="histogram"
+                       scale=0.65, # (un)comment when using density="histogram"
                        ## custom bandwidth
                        adjust = 1,
                        ## move geom to the right
@@ -424,7 +428,7 @@ prat2  <- ggplot() +
   geom_hline(yintercept=CIs.m4.1[1,1], linetype="dashed")+
   guides(color="none", fill="none")+
   theme_bw()+
-  theme(axis.title.y = element_blank())
+  theme()
 prat2
 
 #emmeans
@@ -447,5 +451,8 @@ ts2<- rbind(broom::tidy(m1.1)[,2:6],broom::tidy(m2.1)[,2:6],broom::tidy(m3.1), b
 write.table(ts3, paste(path,"/ts2.txt",sep=""))
 
 #Combination of pannels in one plot -- Figure 1
-ggarrange(pwhc1, pwhc2, pwsa1, pwsa2, pph1, pph2, prat1, prat2,
+fig1 <- ggarrange(pwhc1, pwhc2, pwsa1, pwsa2, pph1, pph2, prat1, prat2,
           ncol = 2, nrow = 4)
+annotate_figure(fig1, bottom = text_grob("Number of conditioners in the mix"))
+ggsave(filename = "Fig.1_300dpi.png", width = 6, height = 9, dpi = 300, bg="white")
+ggsave(filename = "Fig.1_150dpi.png", width = 6, height = 9, dpi = 150, bg="white")
