@@ -16,6 +16,9 @@ vapply(pkgs, FUN = library, FUN.VALUE = logical(1L), logical.return = TRUE, char
 URL <- "https://raw.githubusercontent.com/juan-duenas/NHESS/main/MADdb.csv" 
 '%notin%' <- Negate('%in%') #custom function
 
+#get working directory <- where tables will be stored
+getwd()
+
 #load dataset
 MAD <- read_csv2(URL) %>%
          mutate(whc1=whc/100)%>%
@@ -47,9 +50,9 @@ print(m4)
 bstat <- function (data, i)
 {
   d <- data [i,]
-  fit <- update(m3, data=d) # replace model object here
-  #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
-  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
+  fit <- update(m1, data=d) # replace model object here
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
+  #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
   #store updated model mean predictions
   rtn <- c("1"=NA, "2"=NA,  "3"=NA, "4"=NA) #dummy logical vector
   rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
@@ -229,7 +232,7 @@ con.m4$contrasts %>% summary(infer=TRUE)
 
 #Table with broom
 ts1<- rbind(broom::tidy(m1)[,2:6],broom::tidy(m2)[,2:6],broom::tidy(m3), broom::tidy(m4))
-write.table(ts1, paste(path,"/ts1.txt",sep=""))
+write.table(ts1, "ts1.txt")
 # multiple amendments against control 2 ####
 
 #Models against control 2 
@@ -249,9 +252,9 @@ summary(m4.1)
 bstat2 <- function (data, i)
 {
   d <- data [i,]
-  fit <- update(m3.1, data=d)
-  #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
-  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
+  fit <- update(m1.1, data=d)
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
+  #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
   #store updated model mean predictions
   rtn <- c("1"=NA, "2"=NA, "3"=NA, "4"=NA) #dummy logical vector
   rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
@@ -448,9 +451,9 @@ con.m4.1$contrasts %>% summary(infer=TRUE)
 
 #Tables with broom
 ts2<- rbind(broom::tidy(m1.1)[,2:6],broom::tidy(m2.1)[,2:6],broom::tidy(m3.1), broom::tidy(m4.1))
-write.table(ts3, paste(path,"/ts2.txt",sep=""))
+write.table(ts2, "ts2.txt")
 
-#Combination of pannels in one plot -- Figure 1
+#Combination of panels in one plot -- Figure 1
 fig1 <- ggarrange(pwhc1, pwhc2, pwsa1, pwsa2, pph1, pph2, prat1, prat2,
           ncol = 2, nrow = 4)
 annotate_figure(fig1, bottom = text_grob("Number of conditioners in the mix"))
