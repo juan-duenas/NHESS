@@ -1,11 +1,13 @@
-#Multiple soil conditioner addition - Incubation experiment -- Special issue NHESS
+# Soil conditioner mixtures as an agricultural management alternative to mitigate drought impacts: a proof-of-concept.
+# Special issue: Current and future water-related risks in the Berlin–Brandenburg region
+# Natural Hazards and Earth System Sciences
+
 #Juan F. Dueñas Ph.D. https://github.com/juan-duenas
 
-# This code reproduces the analysis and the main figure presented in the paper.
-# ATTENTION: there are some lines of code within functions that need to be (un)comment by the user before running the code
-# The lines to be (un)comment as well as the objects where the results are stored depend on the model object and variable analyzed. 
-# every instance in which this is the case is signaled by a message next to the line of code
-# I am sure there is a more efficient way to do this. You are welcome to improve the code.
+# This code reproduces the analysis and the main figure presented in the paper
+# ATTENTION: There are a number of repeated functions that overwrite the results in unique objects 
+# I am sure there is a more efficient way to do this.You are welcome to improve the code. 
+# Consider citing the paper, or the DOI of the script and database if find this work useful.
 
 #load packages
 pkgs <- c("tidyverse", "ggpubr", "car", "MASS", "emmeans", "betareg", "boot", "ggrepel")
@@ -20,7 +22,8 @@ URL <- "https://raw.githubusercontent.com/juan-duenas/NHESS/main/MADdb.csv"
 getwd()
 
 #load dataset
-MAD <- read_csv2(URL) %>%
+MAD <- read.csv2(URL, sep=";", fileEncoding="UTF-16LE") %>%
+         dplyr::select(-X)%>%
          mutate(whc1=whc/100)%>%
          mutate(wsa1=wsa/100)%>%
          mutate(Nfactors = as.factor(Nfactors))%>%
@@ -34,25 +37,16 @@ MAD2 = MAD%>%filter(Amendment %notin% c("Biochar","Compost", "Microbial wash",
 
 # multiple amendments against control 1####
 #Models against control 1 
+# WHC
 m1 <- betareg(whc1~Nfactors, MAD1)
 print(m1)
 
-m2 <- betareg(wsa1~Nfactors, MAD1)
-summary(m2)
-
-m3 <- lm(pH~Nfactors, MAD1)
-print(m3)
-
-m4 <- lm(ratio~Nfactors, MAD1)
-print(m4)
-
-# boot function - !!ATENTION!! replace models and (un)comment lines when necessary
-bstat <- function (data, i)
+# boot function
+bstat1 <- function (data, i)
 {
   d <- data [i,]
   fit <- update(m1, data=d) # replace model object here
-  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
-  #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response")
   #store updated model mean predictions
   rtn <- c("1"=NA, "2"=NA,  "3"=NA, "4"=NA) #dummy logical vector
   rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
@@ -60,7 +54,7 @@ bstat <- function (data, i)
 }
 
 set.seed(1234) # run to make results reproducible
-br <- boot(statistic = bstat, data = MAD1, R =5000, parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+br <- boot(statistic = bstat1, data = MAD1, R =5000, parallel = "multicore", ncpus = 4) # option multicore does not work on windows
 plot(br)
 
 bres <- list() # create list to store CIs from boot
@@ -89,6 +83,44 @@ CIs.m1 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(cup=as.numeric(cup))%>%
   mutate(cup=round(cup*100,2))
 
+# WSA
+m2 <- betareg(wsa1~Nfactors, MAD1)
+print(m2)
+
+# boot function
+bstat2 <- function (data, i)
+{
+  d <- data [i,]
+  fit <- update(m2, data=d) # replace model object here
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
+  #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
+  #store updated model mean predictions
+  rtn <- c("1"=NA, "2"=NA,  "3"=NA, "4"=NA) #dummy logical vector
+  rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
+  rtn 
+}
+
+set.seed(1234) # run to make results reproducible
+br <- boot(statistic = bstat2, data = MAD1, R =5000, parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+plot(br)
+
+bres <- list() # create list to store CIs from boot
+for (i in 1:ncol(br$t[,1:4])){
+  bres[[i]] <- boot.ci(br, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
+}
+
+# loop to extract CI from boot object
+media <- br$t0[1:4] # 'media' means mean in Spanish
+cdown <- c() 
+cup <- c()
+Nfactors <- c(0,1,3,5)
+
+for (i in 1:length(bres[[i]])){
+  cdown[i] <- bres[[i]]$bca[,4]
+  cup[i] <- bres[[i]]$bca[,5]
+}
+
+#get results together in a data frame in order to plot
 CIs.m2 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(Nfactors=as.factor(Nfactors))%>%
   mutate(media=as.numeric(media))%>%
@@ -98,12 +130,86 @@ CIs.m2 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(cup=as.numeric(cup))%>%
   mutate(cup=round(cup*100,2))
 
+#pH
+m3 <- lm(pH~Nfactors, MAD1)
+print(m3)
+
+# boot function
+bstat3 <- function (data, i)
+{
+  d <- data [i,]
+  fit <- update(m3, data=d) # replace model object here
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
+  #store updated model mean predictions
+  rtn <- c("1"=NA, "2"=NA,  "3"=NA, "4"=NA) #dummy logical vector
+  rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
+  rtn 
+}
+
+set.seed(1234) # run to make results reproducible
+br <- boot(statistic = bstat3, data = MAD1, R =5000, parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+plot(br)
+
+bres <- list() # create list to store CIs from boot
+for (i in 1:ncol(br$t[,1:4])){
+  bres[[i]] <- boot.ci(br, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
+}
+
+# loop to extract CI from boot object
+media <- br$t0[1:4] # 'media' means mean in Spanish
+cdown <- c() 
+cup <- c()
+Nfactors <- c(0,1,3,5)
+
+for (i in 1:length(bres[[i]])){
+  cdown[i] <- bres[[i]]$bca[,4]
+  cup[i] <- bres[[i]]$bca[,5]
+}
+
+#get results together in a data frame in order to plot
 CIs.m3 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(Nfactors=as.factor(Nfactors))%>%
   mutate(media=as.numeric(media))%>%
   mutate(cdown=as.numeric(cdown))%>%
   mutate(cup=as.numeric(cup))
 
+# B:F ratio
+m4 <- lm(ratio~Nfactors, MAD1)
+print(m4)
+
+# boot function
+bstat4 <- function (data, i)
+{
+  d <- data [i,]
+  fit <- update(m4, data=d) # replace model object here
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
+  #store updated model mean predictions
+  rtn <- c("1"=NA, "2"=NA,  "3"=NA, "4"=NA) #dummy logical vector
+  rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
+  rtn 
+}
+
+set.seed(1234) # run to make results reproducible
+br <- boot(statistic = bstat4, data = MAD1, R =5000, parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+plot(br)
+
+bres <- list() # create list to store CIs from boot
+for (i in 1:ncol(br$t[,1:4])){
+  bres[[i]] <- boot.ci(br, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
+}
+
+# loop to extract CI from boot object
+media <- br$t0[1:4] # 'media' means mean in Spanish
+cdown <- c() 
+cup <- c()
+Nfactors <- c(0,1,3,5)
+
+for (i in 1:length(bres[[i]])){
+  cdown[i] <- bres[[i]]$bca[,4]
+  cup[i] <- bres[[i]]$bca[,5]
+}
+
+#get results together in a data frame in order to plot
 CIs.m4 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(Nfactors=as.factor(Nfactors))%>%
   mutate(media=as.numeric(media))%>%
@@ -235,26 +341,17 @@ ts1<- rbind(broom::tidy(m1)[,2:6],broom::tidy(m2)[,2:6],broom::tidy(m3), broom::
 write.table(ts1, "ts1.txt")
 # multiple amendments against control 2 ####
 
-#Models against control 2 
+#Models against control 2
+# WHC
 m1.1 <- betareg(whc1~Nfactors, MAD2)
 print(m1.1)
 
-m2.1 <- betareg(wsa1~Nfactors, MAD2)
-summary(m2.1)
-
-m3.1 <- lm(pH~Nfactors, MAD2)
-summary(m3.1)
-
-m4.1 <- lm(ratio~Nfactors, MAD2)
-summary(m4.1)
-
-## boot function - !!ATENTION!! replace models and (un)comment lines when necessary
-bstat2 <- function (data, i)
+## boot function 
+bstat1.1 <- function (data, i)
 {
   d <- data [i,]
   fit <- update(m1.1, data=d)
-  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # (un)comment when passing betareg objects - comment when other models are run
-  #ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # (un)comment when passing lm objects - comment when other models are run
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # when passing betareg objects
   #store updated model mean predictions
   rtn <- c("1"=NA, "2"=NA, "3"=NA, "4"=NA) #dummy logical vector
   rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
@@ -262,16 +359,16 @@ bstat2 <- function (data, i)
 }
 
 set.seed(123) # run to make results reproducible
-br1.2 <- boot(statistic = bstat2, data = MAD2, R =5000 , parallel = "multicore", ncpus = 4) # option multicore does not work on windows
-plot(br1.2)
+br <- boot(statistic = bstat1.1, data = MAD2, R =5000 , parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+plot(br)
 
 bres2 <- list() # create list to store CIs from boot
-for (i in 1:ncol(br1.2$t[,1:4])){
-  bres2[[i]] <- boot.ci(br1.2, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
+for (i in 1:ncol(br$t[,1:4])){
+  bres2[[i]] <- boot.ci(br, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
 }
 
 # loop to extract CI from boot object
-media <- br1.2$t0[1:4] # 'media' means mean in Spanish
+media <- br$t0[1:4] # 'media' means mean in Spanish
 cdown <- c() 
 cup <- c()
 Nfactors <- c(0,1,3,5)
@@ -281,7 +378,7 @@ for (i in 1:4){
   cup[i] <- bres2[[i]]$bca[,5]
 }
 
-#get everything together in a data frame in order to plot - Attention - run each chunk of code for the appropriate model results signaled by the name of the object
+#get everything together in a data frame in order to plot
 CIs.m1.1 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(Nfactors=as.factor(Nfactors))%>%
   mutate(media=as.numeric(media))%>%
@@ -291,6 +388,43 @@ CIs.m1.1 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(cup=as.numeric(cup))%>%
   mutate(cup=round(cup*100,2))
 
+#WSA
+m2.1 <- betareg(wsa1~Nfactors, MAD2)
+summary(m2.1)
+
+## boot function 
+bstat2.1 <- function (data, i)
+{
+  d <- data [i,]
+  fit <- update(m2.1, data=d)
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$levels$mean)), type = "response") # when passing betareg objects
+  #store updated model mean predictions
+  rtn <- c("1"=NA, "2"=NA, "3"=NA, "4"=NA) #dummy logical vector
+  rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
+  rtn 
+}
+
+set.seed(123) # run to make results reproducible
+br <- boot(statistic = bstat2.1, data = MAD2, R =5000 , parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+plot(br)
+
+bres2 <- list() # create list to store CIs from boot
+for (i in 1:ncol(br$t[,1:4])){
+  bres2[[i]] <- boot.ci(br, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
+}
+
+# loop to extract CI from boot object
+media <- br$t0[1:4] # 'media' means mean in Spanish
+cdown <- c() 
+cup <- c()
+Nfactors <- c(0,1,3,5)
+
+for (i in 1:4){
+  cdown[i] <- bres2[[i]]$bca[,4]
+  cup[i] <- bres2[[i]]$bca[,5]
+}
+
+#get everything together in a data frame in order to plot
 CIs.m2.1 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(Nfactors=as.factor(Nfactors))%>%
   mutate(media=as.numeric(media))%>%
@@ -300,19 +434,93 @@ CIs.m2.1 <- cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(cup=as.numeric(cup))%>%
   mutate(cup=round(cup*100,2))
 
+#pH
+m3.1 <- lm(pH~Nfactors, MAD2)
+print(m3.1)
+
+## boot function 
+bstat3.1 <- function (data, i)
+{
+  d <- data [i,]
+  fit <- update(m3.1, data=d)
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # when passing lm objects
+  #store updated model mean predictions
+  rtn <- c("1"=NA, "2"=NA, "3"=NA, "4"=NA) #dummy logical vector
+  rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
+  rtn 
+}
+
+set.seed(123) # run to make results reproducible
+br <- boot(statistic = bstat3.1, data = MAD2, R =5000 , parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+plot(br)
+
+bres2 <- list() # create list to store CIs from boot
+for (i in 1:ncol(br$t[,1:4])){
+  bres2[[i]] <- boot.ci(br, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
+}
+
+# loop to extract CI from boot object
+media <- br$t0[1:4] # 'media' means mean in Spanish
+cdown <- c() 
+cup <- c()
+Nfactors <- c(0,1,3,5)
+
+for (i in 1:4){
+  cdown[i] <- bres2[[i]]$bca[,4]
+  cup[i] <- bres2[[i]]$bca[,5]
+}
+
+#get everything together in a data frame in order to plot
 CIs.m3.1<-  cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(Nfactors=as.factor(Nfactors))%>%
   mutate(media=as.numeric(media))%>%
   mutate(cdown=as.numeric(cdown))%>%
   mutate(cup=as.numeric(cup))
 
+# B:F ratio
+m4.1 <- lm(ratio~Nfactors, MAD2)
+summary(m4.1)
+
+## boot function 
+bstat4.1 <- function (data, i)
+{
+  d <- data [i,]
+  fit <- update(m4.1, data=d)
+  ko <- predict(fit, newdata = with(d, expand.grid(Nfactors = fit$xlevels$Nfactors)), type = "response") # when passing lm objects
+  #store updated model mean predictions
+  rtn <- c("1"=NA, "2"=NA, "3"=NA, "4"=NA) #dummy logical vector
+  rtn[names(ko)] <- ko #replace missing values in predict() vector, leaving NAs when necessary
+  rtn 
+}
+
+set.seed(123) # run to make results reproducible
+br <- boot(statistic = bstat4.1, data = MAD2, R =5000 , parallel = "multicore", ncpus = 4) # option multicore does not work on windows
+plot(br)
+
+bres2 <- list() # create list to store CIs from boot
+for (i in 1:ncol(br$t[,1:4])){
+  bres2[[i]] <- boot.ci(br, level = .95, type = c("bca"),index = i) # extract CI of the BCA type
+}
+
+# loop to extract CI from boot object
+media <- br$t0[1:4] # 'media' means mean in Spanish
+cdown <- c() 
+cup <- c()
+Nfactors <- c(0,1,3,5)
+
+for (i in 1:4){
+  cdown[i] <- bres2[[i]]$bca[,4]
+  cup[i] <- bres2[[i]]$bca[,5]
+}
+
+#get everything together in a data frame in order to plot
 CIs.m4.1<-  cbind(media, cdown, cup, Nfactors)%>% data.frame()%>%
   mutate(Nfactors=as.factor(Nfactors))%>%
   mutate(media=as.numeric(media))%>%
   mutate(cdown=as.numeric(cdown))%>%
   mutate(cup=as.numeric(cup))
 
-#Plot first part of Fig. 1 - Attention - use the appropiate CIs.xx object for each panel
+#Plot the second part of Fig. 1 - Attention - use the appropiate CIs.xx object for each panel
 labelsx_legend <- c("None", "One (TD)", "Three", "Five") # run this code for the second batch of panels
 
 #WHC
@@ -447,7 +655,6 @@ con.m3.1$contrasts %>% summary(infer=TRUE)
 
 con.m4.1 <- emmeans(m4.1, specs = trt.vs.ctrl~Nfactors, type="response")
 con.m4.1$contrasts %>% summary(infer=TRUE)
-
 
 #Tables with broom
 ts2<- rbind(broom::tidy(m1.1)[,2:6],broom::tidy(m2.1)[,2:6],broom::tidy(m3.1), broom::tidy(m4.1))
